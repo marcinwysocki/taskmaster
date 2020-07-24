@@ -6,21 +6,38 @@ defmodule TaskmasterTest do
       assert {:ok, _pid} = Taskmaster.race([fn -> 1 end, fn -> 2 end])
     end
 
+    test "started process isn't linked to the caller by default" do
+      Process.flag(:trap_exit, true)
+
+      {:ok, pid} = Taskmaster.race([fn -> 1 end, fn -> 2 end])
+      Process.exit(pid, :kill)
+
+      refute_receive {:EXIT, _, _}
+    end
+
+    test "started process is linked to the caller if :link option is set to true" do
+      Process.flag(:trap_exit, true)
+
+      {:ok, pid} = Taskmaster.race([fn -> 1 end, fn -> 2 end], link: true)
+      Process.exit(pid, :kill)
+
+      assert_receive {:EXIT, ^pid, :killed}
+    end
+
     test "sends a message with a result of the function that completes first" do
-      {:ok, pid} =
-        Taskmaster.race([
-          fn ->
-            :one
-          end,
-          fn ->
-            :timer.sleep(200)
-            :two
-          end,
-          fn ->
-            :timer.sleep(300)
-            :three
-          end
-        ])
+      Taskmaster.race([
+        fn ->
+          :one
+        end,
+        fn ->
+          :timer.sleep(200)
+          :two
+        end,
+        fn ->
+          :timer.sleep(300)
+          :three
+        end
+      ])
 
       assert_receive {:race_won, :one}
     end

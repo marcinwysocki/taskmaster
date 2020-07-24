@@ -45,7 +45,9 @@ defmodule Taskmaster do
   def race([], _), do: raise(ArgumentError, message: "funs cannot be an empty list")
 
   def race(funs, opts) when is_list(funs) do
-    GenServer.start(__MODULE__, %{op: {:race, funs, opts}, caller: self(), monitor: nil})
+    method = if opts[:link], do: :link, else: :nolink
+
+    start(method, {:race, funs, opts})
   end
 
   def init(%{op: op, caller: caller} = state) do
@@ -98,4 +100,12 @@ defmodule Taskmaster do
   end
 
   def handle_info(_, state), do: {:noreply, state}
+
+  defp start(:nolink, op) do
+    GenServer.start(__MODULE__, %{op: op, caller: self(), monitor: nil})
+  end
+
+  defp start(:link, op) do
+    GenServer.start_link(__MODULE__, %{op: op, caller: self(), monitor: nil})
+  end
 end
