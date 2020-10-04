@@ -129,7 +129,7 @@ defmodule Taskmaster do
   end
 
   def handle_cast({:"$taskmaster_race", funs, opts}, %{caller: caller} = state) do
-    result =
+    funs_result =
       funs
       |> run_concurrently(ordered: false, timeout: opts[:timeout])
       |> values()
@@ -137,14 +137,14 @@ defmodule Taskmaster do
       |> extract()
       |> List.first()
 
-    message =
-      case result do
-        {:exit, :timeout} -> {:race_interrupted, :timeout}
-        error when is_error(error) -> {:race_interrupted, error}
-        value -> {:race_won, value}
+    result =
+      case funs_result do
+        {:exit, :timeout} -> {:interrupted, :timeout}
+        error when is_error(error) -> {:interrupted, error}
+        value -> {:winner, value}
       end
 
-    send(caller, message)
+    send(caller, %Taskmaster.Result{action: :race, result: result})
 
     {:stop, :normal, state}
   end
