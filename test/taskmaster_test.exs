@@ -179,8 +179,8 @@ defmodule TaskmasterTest do
         end
       ])
 
-      refute_received {:all_return_values, [:one, :two, :three]}
-      assert_receive {:all_return_values, [:one, :two, :three]}, 400
+      refute_received %Taskmaster.Result{action: :all, result: [:one, :two, :three]}
+      assert_receive %Taskmaster.Result{action: :all, result: [:one, :two, :three]}, 400
     end
 
     test "sends an error message to the caller if one of the functions raises en error" do
@@ -198,7 +198,8 @@ defmodule TaskmasterTest do
         end
       ])
 
-      assert_receive {:all_error, {:error, %ErlangError{}}}, 500
+      assert_receive %Taskmaster.Result{action: :all, result: {:error, {:error, %ErlangError{}}}},
+                     500
     end
 
     test "sends an error message to the caller if one of the functions retuns an error tuple" do
@@ -216,7 +217,7 @@ defmodule TaskmasterTest do
         end
       ])
 
-      assert_receive {:all_error, {:error, reason}}, 500
+      assert_receive %Taskmaster.Result{action: :all, result: {:error, {:error, :reason}}}, 500
     end
 
     test "sends an error message to the caller if one of the functions times out" do
@@ -237,7 +238,7 @@ defmodule TaskmasterTest do
         timeout: 100
       )
 
-      assert_receive {:all_error, {:exit, :timeout}}, 500
+      assert_receive %Taskmaster.Result{action: :all, result: {:error, {:exit, :timeout}}}, 500
     end
   end
 end

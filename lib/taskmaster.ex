@@ -111,19 +111,19 @@ defmodule Taskmaster do
 
   @impl true
   def handle_cast({:"$taskmaster_all", funs, opts}, %{caller: caller} = state) do
-    results =
+    funs_results =
       funs
       |> run_concurrently(ordered: true, timeout: opts[:timeout])
       |> values()
       |> results_if_all(&correct_result?/1)
 
-    message =
-      case results do
-        [error] when is_error(error) -> {:all_error, error}
-        elements -> {:all_return_values, elements}
+    result =
+      case funs_results do
+        [error] when is_error(error) -> {:error, error}
+        elements -> elements
       end
 
-    send(caller, message)
+    send(caller, %Taskmaster.Result{action: :all, result: result})
 
     {:stop, :normal, state}
   end
